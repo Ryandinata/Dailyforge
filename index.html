@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0f">
+<link rel="manifest" href="manifest.json">
+<title>DailyForge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --bg2: #13131a;
+  --bg3: #1c1c28;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.13);
+  --text: #e8e8f0;
+  --muted: #6b6b80;
+  --accent: #7c6af7;
+  --accent2: #a594ff;
+  --green: #3dd68c;
+  --amber: #f5a623;
+  --red: #f05252;
+  --blue: #4fa8e8;
+  --mono: 'Space Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; overflow-x: hidden; }
+
+/* NAV */
+.app-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 0; }
+.app-logo { font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--accent2); letter-spacing: .04em; }
+.app-date { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.tab-bar { display: flex; gap: 4px; padding: 14px 20px 0; }
+.tab { flex: 1; padding: 9px 4px; text-align: center; font-size: 12px; font-weight: 500; border-radius: 8px; border: none; background: transparent; color: var(--muted); cursor: pointer; transition: all .15s; font-family: var(--sans); }
+.tab.active { background: var(--bg3); color: var(--text); }
+.page { display: none; padding: 16px 20px 100px; }
+.page.active { display: block; }
+
+/* CARDS */
+.card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.card-title { font-size: 11px; font-family: var(--mono); font-weight: 700; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+.card-badge { font-size: 11px; font-family: var(--mono); color: var(--accent2); }
+
+/* CHECKLIST */
+.check-group { margin-bottom: 4px; }
+.check-item { display: flex; align-items: flex-start; gap: 11px; padding: 9px 10px; border-radius: 8px; cursor: pointer; transition: background .1s; user-select: none; }
+.check-item:hover { background: var(--bg3); }
+.check-item.done .check-label { color: var(--muted); text-decoration: line-through; }
+.check-box { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--border2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; transition: all .15s; background: transparent; }
+.check-item.done .check-box { background: var(--green); border-color: var(--green); }
+.check-tick { color: #0a0a0f; font-size: 11px; font-weight: 700; opacity: 0; transition: opacity .1s; }
+.check-item.done .check-tick { opacity: 1; }
+.check-label { font-size: 14px; color: var(--text); line-height: 1.4; }
+.check-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.section-label { font-size: 11px; color: var(--accent); font-weight: 600; padding: 10px 10px 4px; letter-spacing: .04em; }
+
+/* PROGRESS BAR */
+.prog-wrap { background: var(--bg3); border-radius: 4px; height: 5px; overflow: hidden; margin-top: 10px; }
+.prog-bar { height: 5px; border-radius: 4px; background: var(--green); transition: width .4s; }
+
+/* SKIP DAY */
+.skip-btn { width: 100%; padding: 10px; background: transparent; border: 0.5px dashed var(--border2); border-radius: 8px; color: var(--muted); font-size: 13px; cursor: pointer; font-family: var(--sans); margin-top: 6px; transition: all .15s; }
+.skip-btn:hover { border-color: var(--amber); color: var(--amber); }
+.skip-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 100; align-items: flex-end; }
+.skip-modal.open { display: flex; }
+.skip-sheet { background: var(--bg2); border-radius: 20px 20px 0 0; padding: 24px 20px 40px; width: 100%; border-top: 0.5px solid var(--border2); }
+.skip-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.skip-sub { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+.skip-reasons { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.skip-tag { padding: 7px 14px; border-radius: 20px; border: 0.5px solid var(--border2); font-size: 12px; cursor: pointer; transition: all .15s; background: transparent; color: var(--text); font-family: var(--sans); }
+.skip-tag.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+.skip-input { width: 100%; background: var(--bg3); border: 0.5px solid var(--border2); border-radius: 10px; padding: 12px; color: var(--text); font-size: 14px; font-family: var(--sans); outline: none; margin-bottom: 14px; resize: none; }
+.skip-input:focus { border-color: var(--accent); }
+.btn-primary { width: 100%; padding: 13px; background: var(--accent); border: none; border-radius: 10px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; font-family: var(--sans); }
+.btn-ghost { width: 100%; padding: 11px; background: transparent; border: 0.5px solid var(--border2); border-radius: 10px; color: var(--muted); font-size: 13px; cursor: pointer; font-family: var(--sans); margin-top: 8px; }
+
+/* CALENDAR */
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
+.cal-dow { text-align: center; font-size: 10px; color: var(--muted); font-family: var(--mono); padding-bottom: 6px; }
+.cal-day { aspect-ratio: 1; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-family: var(--mono); cursor: pointer; position: relative; border: 1px solid transparent; transition: all .1s; }
+.cal-day.empty { pointer-events: none; }
+.cal-day.future { color: var(--muted); opacity: .4; pointer-events: none; }
+.cal-day.today { border-color: var(--accent); color: var(--accent2); }
+.cal-day.full { background: var(--green); color: #0a0a0f; font-weight: 700; }
+.cal-day.partial { background: var(--amber); color: #0a0a0f; }
+.cal-day.skipped { background: var(--bg3); color: var(--muted); }
+.cal-day.skipped::after { content: '—'; position: absolute; font-size: 8px; bottom: 2px; left: 50%; transform: translateX(-50%); }
+.cal-day.none { color: var(--muted); }
+.cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.cal-nav-btn { background: var(--bg3); border: none; color: var(--text); width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+.cal-month { font-family: var(--mono); font-size: 13px; font-weight: 700; }
+.legend-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+.legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+/* INVESTMENT */
+.inv-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.inv-stat { background: var(--bg3); border-radius: 10px; padding: 12px; }
+.inv-stat-num { font-size: 18px; font-weight: 600; font-family: var(--mono); color: var(--text); }
+.inv-stat-lbl { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.inv-form { display: flex; flex-direction: column; gap: 10px; }
+.inv-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; font-weight: 500; }
+.inv-input { background: var(--bg3); border: 0.5px solid var(--border2); border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 14px; font-family: var(--mono); outline: none; width: 100%; }
+.inv-input:focus { border-color: var(--accent); }
+.inv-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+.inv-row:last-child { border-bottom: none; }
+.inv-row-month { font-size: 12px; font-family: var(--mono); color: var(--muted); }
+.inv-row-val { font-size: 13px; font-family: var(--mono); color: var(--text); }
+.inv-row-port { font-size: 12px; color: var(--green); font-family: var(--mono); }
+.chart-wrap { height: 160px; position: relative; margin: 14px 0 6px; }
+.chart-svg { width: 100%; height: 100%; }
+
+/* SETTINGS */
+.setting-row { display: flex; align-items: center; justify-content: space-between; padding: 13px 0; border-bottom: 0.5px solid var(--border); }
+.setting-row:last-child { border-bottom: none; }
+.setting-label { font-size: 14px; }
+.setting-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.toggle { width: 40px; height: 22px; background: var(--bg3); border-radius: 11px; position: relative; cursor: pointer; transition: background .2s; border: 0.5px solid var(--border2); }
+.toggle.on { background: var(--accent); }
+.toggle-knob { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform .2s; }
+.toggle.on .toggle-knob { transform: translateX(18px); }
+.habit-edit-list { display: flex; flex-direction: column; gap: 8px; }
+.habit-edit-item { background: var(--bg3); border-radius: 10px; padding: 12px; display: flex; align-items: center; gap: 10px; }
+.habit-edit-input { background: transparent; border: none; color: var(--text); font-size: 13px; font-family: var(--sans); outline: none; flex: 1; }
+.habit-edit-del { color: var(--red); font-size: 16px; cursor: pointer; padding: 4px; background: none; border: none; flex-shrink: 0; }
+.add-habit-row { display: flex; gap: 8px; margin-top: 8px; }
+.add-habit-input { flex: 1; background: var(--bg3); border: 0.5px solid var(--border2); border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 13px; font-family: var(--sans); outline: none; }
+.add-habit-input:focus { border-color: var(--accent); }
+.add-btn { background: var(--accent); border: none; border-radius: 8px; color: #fff; padding: 10px 16px; font-size: 13px; cursor: pointer; font-family: var(--sans); font-weight: 600; white-space: nowrap; }
+
+/* STATS CHIPS */
+.stats-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.stat-chip { background: var(--bg3); border-radius: 10px; padding: 10px 14px; flex: 1; min-width: 80px; }
+.stat-chip-num { font-size: 20px; font-weight: 700; font-family: var(--mono); color: var(--text); }
+.stat-chip-lbl { font-size: 10px; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: .04em; }
+.streak-fire { font-size: 16px; }
+
+/* BOTTOM NAV */
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg2); border-top: 0.5px solid var(--border); display: flex; padding: 8px 0 20px; z-index: 50; }
+.bnav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 6px 0; }
+.bnav-icon { font-size: 20px; }
+.bnav-label { font-size: 10px; color: var(--muted); }
+.bnav-item.active .bnav-label { color: var(--accent2); }
+.bnav-item.active .bnav-icon { filter: drop-shadow(0 0 4px var(--accent)); }
+
+/* TOAST */
+.toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--bg3); border: 0.5px solid var(--border2); border-radius: 10px; padding: 10px 18px; font-size: 13px; opacity: 0; transition: all .25s; z-index: 200; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <span class="app-logo">DailyForge</span>
+  <span class="app-date" id="hdr-date"></span>
+</div>
+
+<div style="padding:10px 20px 0">
+  <div class="stats-row" id="today-stats"></div>
+</div>
+
+<!-- PAGES -->
+<div class="page active" id="page-today">
+  <div id="checklist-container"></div>
+  <button class="skip-btn" onclick="openSkip()">⚡ Skip today — log a reason</button>
+</div>
+
+<div class="page" id="page-calendar">
+  <div class="card">
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="calPrev()">‹</button>
+      <span class="cal-month" id="cal-month-label"></span>
+      <button class="cal-nav-btn" onclick="calNext()">›</button>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="legend-row">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>All done</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Partial</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--bg3)"></div>Skipped</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--border)"></div>Missed</div>
+    </div>
+  </div>
+  <div class="card" id="cal-detail" style="display:none">
+    <div class="card-header"><span class="card-title" id="cal-detail-date"></span></div>
+    <div id="cal-detail-body"></div>
+  </div>
+</div>
+
+<div class="page" id="page-invest">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Portfolio Overview</span></div>
+    <div class="inv-stat-grid" id="inv-stats"></div>
+    <div class="chart-wrap"><svg class="chart-svg" id="inv-chart" viewBox="0 0 320 150" preserveAspectRatio="none"></svg></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Log This Month</span></div>
+    <div class="inv-form">
+      <div>
+        <div class="inv-label">Month</div>
+        <input class="inv-input" id="inv-month" type="month">
+      </div>
+      <div>
+        <div class="inv-label">Amount transferred (Rp)</div>
+        <input class="inv-input" id="inv-amount" type="number" placeholder="3500000">
+      </div>
+      <div>
+        <div class="inv-label">Current portfolio value (Rp)</div>
+        <input class="inv-input" id="inv-portfolio" type="number" placeholder="e.g. 3600000">
+      </div>
+      <button class="btn-primary" onclick="logInvestment()">Save Entry</button>
+    </div>
+  </div>
+  <div class="card" id="inv-history-card">
+    <div class="card-header"><span class="card-title">History</span></div>
+    <div id="inv-history"></div>
+  </div>
+</div>
+
+<div class="page" id="page-settings">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Habit Sections</span></div>
+    <div id="settings-habits"></div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="card-header"><span class="card-title">Data</span></div>
+    <div class="setting-row">
+      <div><div class="setting-label">Export backup</div><div class="setting-sub">Download all data as JSON</div></div>
+      <button class="add-btn" style="padding:8px 14px;font-size:12px" onclick="exportData()">Export</button>
+    </div>
+    <div class="setting-row">
+      <div><div class="setting-label">Import backup</div><div class="setting-sub">Restore from JSON file</div></div>
+      <label class="add-btn" style="padding:8px 14px;font-size:12px;cursor:pointer">Import<input type="file" accept=".json" style="display:none" onchange="importData(event)"></label>
+    </div>
+    <div class="setting-row">
+      <div><div class="setting-label">Clear all data</div><div class="setting-sub">Permanently delete everything</div></div>
+      <button class="add-btn" style="padding:8px 14px;font-size:12px;background:var(--red)" onclick="clearData()">Clear</button>
+    </div>
+  </div>
+</div>
+
+<!-- SKIP MODAL -->
+<div class="skip-modal" id="skip-modal" onclick="if(event.target===this)closeSkip()">
+  <div class="skip-sheet">
+    <div class="skip-title">Skip today?</div>
+    <div class="skip-sub">Choose a reason — it helps track patterns</div>
+    <div class="skip-reasons" id="skip-reasons"></div>
+    <textarea class="skip-input" id="skip-note" rows="3" placeholder="Optional: add more details..."></textarea>
+    <button class="btn-primary" onclick="confirmSkip()">Log & Skip Day</button>
+    <button class="btn-ghost" onclick="closeSkip()">Cancel</button>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <div class="bnav-item active" id="bnav-today" onclick="switchTab('today')">
+    <span class="bnav-icon">◈</span>
+    <span class="bnav-label">Today</span>
+  </div>
+  <div class="bnav-item" id="bnav-calendar" onclick="switchTab('calendar')">
+    <span class="bnav-icon">◫</span>
+    <span class="bnav-label">Calendar</span>
+  </div>
+  <div class="bnav-item" id="bnav-invest" onclick="switchTab('invest')">
+    <span class="bnav-icon">◈</span>
+    <span class="bnav-label">Invest</span>
+  </div>
+  <div class="bnav-item" id="bnav-settings" onclick="switchTab('settings')">
+    <span class="bnav-icon">◧</span>
+    <span class="bnav-label">Settings</span>
+  </div>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── DEFAULT DATA ───────────────────────────────────────────────
+const DEFAULT_SECTIONS = [
+  {
+    id: 'fitness', title: 'Morning Movement', color: '#3dd68c', icon: '◈',
+    note: 'Longevity & mobility — move well for life, not just today',
+    items: [
+      { id: 'f1', label: 'Deep squat hold', sub: '2×60s — ankle, hip & spine mobility in one move' },
+      { id: 'f2', label: 'Hip 90/90 stretch', sub: '2×45s each side — internal & external hip rotation, prevents knee & back issues' },
+      { id: 'f3', label: 'Thoracic spine rotation', sub: '2×10 reps each side — open upper back, counteracts desk posture' },
+      { id: 'f4', label: 'Dead hang', sub: '3×20–30s — decompress spine, shoulder health, grip strength' },
+      { id: 'f5', label: 'Glute bridge', sub: '2×15 reps slow — activate posterior chain, protect lower back' },
+      { id: 'f6', label: 'World\'s greatest stretch', sub: '5 reps each side — full-body mobility in one move' },
+      { id: 'f7', label: 'Diaphragmatic breathing', sub: '2 min — nasal, belly breath — activates parasympathetic nervous system' },
+    ]
+  },
+  {
+    id: 'it', title: 'IT / AI Learning', color: '#4fa8e8', icon: '◫',
+    note: 'Project-based — use AI as tutor, build & document',
+    items: [
+      { id: 'it1', label: 'Work on thesis / NLP project', sub: '45–60 min focused session' },
+      { id: 'it2', label: 'Document progress on GitHub', sub: 'Commit or update README' },
+      { id: 'it3', label: 'Learn one new concept', sub: 'Ask AI to explain, then apply it' },
+    ]
+  },
+  {
+    id: 'music', title: 'Flute Practice', color: '#f5a623', icon: '♩',
+    note: '20 min total — consistency beats duration',
+    items: [
+      { id: 'm1', label: 'Long tones', sub: '5 min — hold each note 4–8s, listen for tone quality' },
+      { id: 'm2', label: 'Scales & finger drills', sub: '10 min — C major, then one new scale' },
+      { id: 'm3', label: 'Song practice', sub: '5 min — current piece from start to finish' },
+    ]
+  }
+];
+
+const SKIP_REASONS = ['Sick', 'Traveling', 'Event / ceremony', 'Work emergency', 'Rest day', 'Other'];
+
+// ─── STATE ───────────────────────────────────────────────────────
+let S = load();
+let calViewDate = new Date();
+let selectedSkipReasons = [];
+
+function load() {
+  try {
+    const raw = localStorage.getItem('df_data');
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return { sections: DEFAULT_SECTIONS, days: {}, investments: [] };
+}
+
+function save() {
+  try { localStorage.setItem('df_data', JSON.stringify(S)); } catch(e) {}
+}
+
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+function getDayData(dateStr) {
+  if (!S.days[dateStr]) S.days[dateStr] = { checks: {}, skipped: false, skipReason: '', note: '' };
+  return S.days[dateStr];
+}
+
+// ─── TAB SWITCHING ───────────────────────────────────────────────
+function switchTab(tab) {
+  ['today','calendar','invest','settings'].forEach(t => {
+    document.getElementById('page-'+t).classList.toggle('active', t===tab);
+    document.getElementById('bnav-'+t).classList.toggle('active', t===tab);
+  });
+  if (tab === 'calendar') renderCalendar();
+  if (tab === 'invest') renderInvest();
+  if (tab === 'settings') renderSettings();
+}
+
+// ─── TODAY ───────────────────────────────────────────────────────
+function renderToday() {
+  const date = todayStr();
+  const day = getDayData(date);
+  const d = new Date();
+  document.getElementById('hdr-date').textContent =
+    d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+
+  let total = 0, done = 0;
+  S.sections.forEach(sec => sec.items.forEach(it => { total++; if (day.checks[it.id]) done++; }));
+
+  // Stats chips
+  let streak = calcStreak();
+  document.getElementById('today-stats').innerHTML = `
+    <div class="stat-chip"><div class="stat-chip-num">${done}/${total}</div><div class="stat-chip-lbl">Today</div></div>
+    <div class="stat-chip"><div class="stat-chip-num">${streak} <span class="streak-fire">🔥</span></div><div class="stat-chip-lbl">Streak</div></div>
+    <div class="stat-chip"><div class="stat-chip-num">${weekPct()}%</div><div class="stat-chip-lbl">This week</div></div>
+  `;
+
+  // Checklist
+  const cont = document.getElementById('checklist-container');
+  if (day.skipped) {
+    cont.innerHTML = `<div class="card" style="text-align:center;padding:28px 16px">
+      <div style="font-size:32px;margin-bottom:10px">⚡</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:6px">Day skipped</div>
+      <div style="font-size:13px;color:var(--muted)">${day.skipReason}${day.note?' — '+day.note:''}</div>
+      <button class="btn-ghost" style="margin-top:16px;width:auto;padding:8px 20px" onclick="undoSkip()">Undo skip</button>
+    </div>`;
+    return;
+  }
+
+  let html = '';
+  S.sections.forEach(sec => {
+    let secDone = sec.items.filter(it => day.checks[it.id]).length;
+    html += `<div class="card">
+      <div class="card-header">
+        <span class="card-title" style="color:${sec.color}">${sec.icon} ${sec.title}</span>
+        <span class="card-badge">${secDone}/${sec.items.length}</span>
+      </div>`;
+    if (sec.note) html += `<div style="font-size:11px;color:var(--muted);margin:-4px 0 10px;line-height:1.4">${sec.note}</div>`;
+    html += '<div class="check-group">';
+    sec.items.forEach(it => {
+      const done = !!day.checks[it.id];
+      html += `<div class="check-item ${done?'done':''}" onclick="toggle('${it.id}')">
+        <div class="check-box"><span class="check-tick">✓</span></div>
+        <div><div class="check-label">${it.label}</div>${it.sub?`<div class="check-sub">${it.sub}</div>`:''}</div>
+      </div>`;
+    });
+    html += '</div>';
+    const pct = sec.items.length ? Math.round(secDone/sec.items.length*100) : 0;
+    html += `<div class="prog-wrap"><div class="prog-bar" style="width:${pct}%;background:${sec.color}"></div></div>`;
+    html += '</div>';
+  });
+  cont.innerHTML = html;
+}
+
+function toggle(itemId) {
+  const day = getDayData(todayStr());
+  day.checks[itemId] = !day.checks[itemId];
+  save();
+  renderToday();
+}
+
+function calcStreak() {
+  let streak = 0;
+  const today = new Date(); today.setHours(0,0,0,0);
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(today); d.setDate(today.getDate()-i);
+    const ds = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    const day = S.days[ds];
+    if (!day) break;
+    if (day.skipped) { streak++; continue; }
+    const total = S.sections.reduce((a,s)=>a+s.items.length,0);
+    const done = Object.values(day.checks||{}).filter(Boolean).length;
+    if (done === total && total > 0) streak++;
+    else break;
+  }
+  return streak;
+}
+
+function weekPct() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const mon = new Date(today);
+  mon.setDate(today.getDate() - (today.getDay()===0?6:today.getDay()-1));
+  let total = 0, done = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(mon); d.setDate(mon.getDate()+i);
+    if (d > today) break;
+    const ds = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    const day = S.days[ds];
+    const t = S.sections.reduce((a,s)=>a+s.items.length,0);
+    total += t;
+    if (day && !day.skipped) done += Object.values(day.checks||{}).filter(Boolean).length;
+    else if (day && day.skipped) done += t;
+  }
+  return total ? Math.round(done/total*100) : 0;
+}
+
+// ─── SKIP ────────────────────────────────────────────────────────
+function openSkip() {
+  selectedSkipReasons = [];
+  document.getElementById('skip-note').value = '';
+  const cont = document.getElementById('skip-reasons');
+  cont.innerHTML = SKIP_REASONS.map(r =>
+    `<button class="skip-tag" onclick="toggleReason(this,'${r}')">${r}</button>`).join('');
+  document.getElementById('skip-modal').classList.add('open');
+}
+function closeSkip() { document.getElementById('skip-modal').classList.remove('open'); }
+function toggleReason(el, r) {
+  el.classList.toggle('sel');
+  if (selectedSkipReasons.includes(r)) selectedSkipReasons = selectedSkipReasons.filter(x=>x!==r);
+  else selectedSkipReasons.push(r);
+}
+function confirmSkip() {
+  const day = getDayData(todayStr());
+  day.skipped = true;
+  day.skipReason = selectedSkipReasons.join(', ') || 'No reason given';
+  day.note = document.getElementById('skip-note').value.trim();
+  save(); closeSkip(); renderToday(); showToast('Day logged as skipped');
+}
+function undoSkip() {
+  const day = getDayData(todayStr());
+  day.skipped = false; day.skipReason = ''; day.note = '';
+  save(); renderToday();
+}
+
+// ─── CALENDAR ────────────────────────────────────────────────────
+function renderCalendar() {
+  const y = calViewDate.getFullYear(), m = calViewDate.getMonth();
+  document.getElementById('cal-month-label').textContent =
+    calViewDate.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const first = new Date(y, m, 1);
+  const last = new Date(y, m+1, 0);
+  const startDow = (first.getDay()+6)%7;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const total = S.sections.reduce((a,s)=>a+s.items.length,0);
+  let html = ['M','T','W','T','F','S','S'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for (let i=0;i<startDow;i++) html+=`<div class="cal-day empty"></div>`;
+  for (let day=1;day<=last.getDate();day++) {
+    const d = new Date(y,m,day); d.setHours(0,0,0,0);
+    const ds = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    const isToday = d.getTime()===today.getTime();
+    const isFuture = d > today;
+    const data = S.days[ds];
+    let cls = 'cal-day';
+    if (isToday) cls += ' today';
+    if (isFuture) cls += ' future';
+    else if (!data) cls += ' none';
+    else if (data.skipped) cls += ' skipped';
+    else {
+      const done = Object.values(data.checks||{}).filter(Boolean).length;
+      if (done===total && total>0) cls += ' full';
+      else if (done>0) cls += ' partial';
+      else cls += ' none';
+    }
+    html += `<div class="${cls}" onclick="showCalDetail('${ds}',${day})">${day}</div>`;
+  }
+  document.getElementById('cal-grid').innerHTML = html;
+}
+
+function showCalDetail(ds, day) {
+  const data = S.days[ds];
+  const detail = document.getElementById('cal-detail');
+  detail.style.display = 'block';
+  document.getElementById('cal-detail-date').textContent = ds;
+  if (!data) { document.getElementById('cal-detail-body').innerHTML = '<p style="font-size:13px;color:var(--muted)">No data for this day.</p>'; return; }
+  if (data.skipped) {
+    document.getElementById('cal-detail-body').innerHTML = `<p style="font-size:13px;color:var(--amber)">⚡ Skipped: ${data.skipReason}${data.note?' — '+data.note:''}</p>`;
+    return;
+  }
+  let html = '';
+  S.sections.forEach(sec => {
+    const done = sec.items.filter(it=>data.checks&&data.checks[it.id]).length;
+    html += `<div style="margin-bottom:10px"><div style="font-size:12px;font-weight:600;color:${sec.color};margin-bottom:4px">${sec.title}: ${done}/${sec.items.length}</div>`;
+    sec.items.forEach(it => {
+      const c = data.checks&&data.checks[it.id];
+      html += `<div style="font-size:12px;color:${c?'var(--text)':'var(--muted)'};padding:2px 0">${c?'✓':'○'} ${it.label}</div>`;
+    });
+    html += '</div>';
+  });
+  document.getElementById('cal-detail-body').innerHTML = html;
+}
+
+function calPrev() { calViewDate.setMonth(calViewDate.getMonth()-1); renderCalendar(); }
+function calNext() { if (calViewDate.getFullYear()===new Date().getFullYear()&&calViewDate.getMonth()===new Date().getMonth()) return; calViewDate.setMonth(calViewDate.getMonth()+1); renderCalendar(); }
+
+// ─── INVESTMENT ──────────────────────────────────────────────────
+function renderInvest() {
+  const invs = S.investments || [];
+  const totalIn = invs.reduce((a,i)=>a+(Number(i.amount)||0),0);
+  const latestPort = invs.length ? Number(invs[invs.length-1].portfolio)||0 : 0;
+  const gain = latestPort - totalIn;
+  const gainPct = totalIn ? ((gain/totalIn)*100).toFixed(1) : '0.0';
+
+  document.getElementById('inv-stats').innerHTML = `
+    <div class="inv-stat"><div class="inv-stat-num">${fmtRp(totalIn)}</div><div class="inv-stat-lbl">Total invested</div></div>
+    <div class="inv-stat"><div class="inv-stat-num" style="color:var(--green)">${fmtRp(latestPort)}</div><div class="inv-stat-lbl">Portfolio value</div></div>
+    <div class="inv-stat"><div class="inv-stat-num" style="color:${gain>=0?'var(--green)':'var(--red)'}">${gain>=0?'+':''}${fmtRp(gain)}</div><div class="inv-stat-lbl">Gain / Loss</div></div>
+    <div class="inv-stat"><div class="inv-stat-num" style="color:${gain>=0?'var(--green)':'var(--red)'}">${gainPct}%</div><div class="inv-stat-lbl">Return</div></div>
+  `;
+
+  // Set default month input
+  const now = new Date();
+  document.getElementById('inv-month').value = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+
+  // Chart
+  drawInvChart(invs);
+
+  // History
+  const hist = document.getElementById('inv-history');
+  if (!invs.length) { hist.innerHTML = '<p style="font-size:13px;color:var(--muted)">No entries yet. Log your first month above.</p>'; return; }
+  hist.innerHTML = [...invs].reverse().map((inv,i) => `
+    <div class="inv-row">
+      <div>
+        <div class="inv-row-month">${inv.month}</div>
+        <div class="inv-row-val">+${fmtRp(inv.amount)}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="inv-row-port">${fmtRp(inv.portfolio)}</div>
+        <div style="font-size:11px;color:var(--muted)">portfolio</div>
+      </div>
+      <button onclick="deleteInv(${invs.length-1-i})" style="background:none;border:none;color:var(--red);cursor:pointer;padding:4px 8px;font-size:14px;margin-left:6px">×</button>
+    </div>`).join('');
+}
+
+function drawInvChart(invs) {
+  const svg = document.getElementById('inv-chart');
+  if (invs.length < 2) { svg.innerHTML = '<text x="160" y="80" text-anchor="middle" fill="#6b6b80" font-size="12" font-family="DM Sans">Add more entries to see chart</text>'; return; }
+  const W=320, H=150, PAD=10;
+  const ports = invs.map(i=>Number(i.portfolio)||0);
+  const caps = invs.map((_,idx)=>invs.slice(0,idx+1).reduce((a,i)=>a+(Number(i.amount)||0),0));
+  const maxV = Math.max(...ports, ...caps);
+  const minV = 0;
+  const n = invs.length;
+  const xStep = (W-PAD*2)/(n-1);
+  const yScale = v => H-PAD - ((v-minV)/(maxV-minV||1))*(H-PAD*2);
+
+  const portPts = ports.map((v,i)=>`${PAD+i*xStep},${yScale(v)}`).join(' ');
+  const capPts = caps.map((v,i)=>`${PAD+i*xStep},${yScale(v)}`).join(' ');
+
+  // Area fill under portfolio
+  const areaPath = `M${PAD},${H-PAD} ` + ports.map((v,i)=>`L${PAD+i*xStep},${yScale(v)}`).join(' ') + ` L${PAD+(n-1)*xStep},${H-PAD} Z`;
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#3dd68c" stop-opacity="0.3"/>
+        <stop offset="100%" stop-color="#3dd68c" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <path d="${areaPath}" fill="url(#ag)"/>
+    <polyline points="${capPts}" fill="none" stroke="#f5a623" stroke-width="1.5" stroke-dasharray="4 3" opacity=".7"/>
+    <polyline points="${portPts}" fill="none" stroke="#3dd68c" stroke-width="2"/>
+    ${ports.map((v,i)=>`<circle cx="${PAD+i*xStep}" cy="${yScale(v)}" r="3" fill="#3dd68c"/>`).join('')}
+  `;
+}
+
+function logInvestment() {
+  const month = document.getElementById('inv-month').value;
+  const amount = Number(document.getElementById('inv-amount').value);
+  const portfolio = Number(document.getElementById('inv-portfolio').value);
+  if (!month || !amount || !portfolio) { showToast('Fill in all fields'); return; }
+  if (!S.investments) S.investments = [];
+  const idx = S.investments.findIndex(i=>i.month===month);
+  if (idx>=0) S.investments[idx] = {month,amount,portfolio};
+  else { S.investments.push({month,amount,portfolio}); S.investments.sort((a,b)=>a.month.localeCompare(b.month)); }
+  save(); renderInvest(); showToast('Entry saved');
+  document.getElementById('inv-amount').value='';
+  document.getElementById('inv-portfolio').value='';
+}
+
+function deleteInv(idx) {
+  S.investments.splice(idx,1);
+  save(); renderInvest();
+}
+
+function fmtRp(n) {
+  if (n>=1e9) return (n/1e9).toFixed(1)+'B';
+  if (n>=1e6) return (n/1e6).toFixed(1)+'jt';
+  if (n>=1e3) return (n/1e3).toFixed(0)+'K';
+  return String(Math.round(n));
+}
+
+// ─── SETTINGS ────────────────────────────────────────────────────
+function renderSettings() {
+  const cont = document.getElementById('settings-habits');
+  let html = '';
+  S.sections.forEach((sec,si) => {
+    html += `<div style="margin-bottom:18px">
+      <div style="font-size:11px;font-family:var(--mono);color:${sec.color};font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${sec.icon} ${sec.title}</div>
+      <div class="habit-edit-list" id="sec-items-${si}">`;
+    sec.items.forEach((it,ii) => {
+      html += `<div class="habit-edit-item">
+        <input class="habit-edit-input" value="${escHtml(it.label)}" onchange="editItem(${si},${ii},'label',this.value)" placeholder="Habit name">
+        <button class="habit-edit-del" onclick="deleteItem(${si},${ii})">×</button>
+      </div>`;
+    });
+    html += `</div>
+      <div class="add-habit-row">
+        <input class="add-habit-input" id="new-item-${si}" placeholder="Add new item...">
+        <button class="add-btn" onclick="addItem(${si})">Add</button>
+      </div>
+    </div>`;
+  });
+  cont.innerHTML = html;
+}
+
+function editItem(si,ii,field,val) { S.sections[si].items[ii][field]=val; save(); }
+function deleteItem(si,ii) { S.sections[si].items.splice(ii,1); save(); renderSettings(); showToast('Removed'); }
+function addItem(si) {
+  const inp = document.getElementById('new-item-'+si);
+  const val = inp.value.trim();
+  if (!val) return;
+  const id = 'u'+Date.now();
+  S.sections[si].items.push({id,label:val,sub:''});
+  inp.value=''; save(); renderSettings(); showToast('Added');
+}
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ─── DATA MANAGEMENT ─────────────────────────────────────────────
+function exportData() {
+  const blob = new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'dailyforge-backup-'+todayStr()+'.json';
+  a.click();
+  showToast('Exported');
+}
+
+function importData(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!data.sections || !data.days) { showToast('Invalid file'); return; }
+      S = data; save(); renderToday(); showToast('Data imported');
+    } catch { showToast('Error reading file'); }
+  };
+  reader.readAsText(file);
+}
+
+function clearData() {
+  if (!confirm('Delete ALL data permanently? This cannot be undone.')) return;
+  S = { sections: DEFAULT_SECTIONS, days: {}, investments: [] };
+  save(); renderToday(); showToast('Data cleared');
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+// ─── PWA SERVICE WORKER ──────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+// ─── INIT ────────────────────────────────────────────────────────
+renderToday();
+</script>
+</body>
+</html>
