@@ -345,7 +345,7 @@ const DEFAULT_SECTIONS = [
 ];
 
 // ── STATE ────────────────────────────────────────────────────────
-let supabase = null;
+let sbClient = null;
 let currentUser = null;
 let S = { sections: DEFAULT_SECTIONS, days: {}, investments: [] };
 let calViewDate = new Date();
@@ -359,8 +359,8 @@ async function init() {
   const key = localStorage.getItem('df_sb_key');
   if (!url || !key) { showScreen('setup'); return; }
   try {
-    supabase = window.supabase.createClient(url, key);
-    const { data: { session } } = await supabase.auth.getSession();
+    sbClient = window.supabase.createClient(url, key);
+    const { data: { session } } = await sbClient.auth.getSession();
     if (session) {
       currentUser = session.user;
       await loadFromCloud();
@@ -380,8 +380,8 @@ async function saveSetup() {
     err.textContent = 'Please check your URL and key format'; return;
   }
   try {
-    supabase = window.supabase.createClient(url, key);
-    await supabase.auth.getSession(); // test connection
+    sbClient = window.supabase.createClient(url, key);
+    await sbClient.auth.getSession(); // test connection
     localStorage.setItem('df_sb_url', url);
     localStorage.setItem('df_sb_key', key);
     err.textContent = '';
@@ -418,15 +418,15 @@ async function doLogin() {
   errEl.textContent = '';
   try {
     if (isRegisterMode) {
-      const { data, error } = await supabase.auth.signUp({ email: fakeEmail, password });
+      const { data, error } = await sbClient.auth.signUp({ email: fakeEmail, password });
       if (error) throw error;
       currentUser = data.user;
       // Save username to profiles
-      await supabase.from('profiles').insert({ id: currentUser.id, username });
+      await sbClient.from('profiles').insert({ id: currentUser.id, username });
       S = { sections: DEFAULT_SECTIONS, days: {}, investments: [] };
       await pushToCloud();
     } else {
-      const { data, error } = await supabase.auth.signInWithPassword({ email: fakeEmail, password });
+      const { data, error } = await sbClient.auth.signInWithPassword({ email: fakeEmail, password });
       if (error) throw error;
       currentUser = data.user;
       await loadFromCloud();
@@ -441,7 +441,7 @@ async function doLogin() {
 
 async function doLogout() {
   await syncData(true);
-  await supabase.auth.signOut();
+  await sbClient.auth.signOut();
   currentUser = null;
   S = { sections: DEFAULT_SECTIONS, days: {}, investments: [] };
   showScreen('login');
@@ -450,7 +450,7 @@ async function doLogout() {
 // ── CLOUD SYNC ────────────────────────────────────────────────────
 async function loadFromCloud() {
   try {
-    const { data, error } = await supabase.from('habit_data')
+    const { data, error } = await sbClient.from('habit_data')
       .select('data').eq('user_id', currentUser.id).single();
     if (data && data.data && Object.keys(data.data).length > 0) {
       S = data.data;
@@ -468,10 +468,10 @@ async function loadFromCloud() {
 }
 
 async function pushToCloud() {
-  if (!currentUser || !supabase) return;
+  if (!currentUser || !sbClient) return;
   try {
     localStorage.setItem('df_cache', JSON.stringify(S));
-    const { error } = await supabase.from('habit_data')
+    const { error } = await sbClient.from('habit_data')
       .upsert({ user_id: currentUser.id, data: S }, { onConflict: 'user_id' });
     if (error) throw error;
     return true;
